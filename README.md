@@ -42,12 +42,12 @@ When using a coding agent for setup, begin with the [first-run coding-agent hand
 
 ### 1. Fork, clone, and authenticate
 
-Fork `msftse/sre-agent-demo` in GitHub, then clone **your fork**:
+Fork `msftse-org/sre-agent-demo` in GitHub, then clone **your fork**:
 
 ```bash
 git clone https://github.com/<your-github-owner>/sre-agent-demo.git
 cd sre-agent-demo
-git remote add upstream https://github.com/msftse/sre-agent-demo.git
+git remote add upstream https://github.com/msftse-org/sre-agent-demo.git
 
 az login
 az account set --subscription <your-subscription-id-or-name>
@@ -545,7 +545,7 @@ Every taggable Terraform resource receives `SecurityControl=Ignore`. The verifie
 
 ## Core Azure and AKS
 
-Each deployment receives a generated suffix exposed by `terraform -chdir=iac output -raw resource_name_suffix`. AKS runs two `Standard_D2ds_v5` Azure Linux 3 nodes with host encryption, managed Entra authentication, Azure RBAC, OIDC/workload identity, and Cilium. The local operator role is opt-in and cluster-scoped; reusable Terraform configurations create no human data-plane assignment by default.
+Each deployment receives a generated suffix exposed by `terraform -chdir=iac output -raw resource_name_suffix`. Fresh colleague profiles use an explicit bounded node-resource-group name, while existing deployments can retain their platform-generated name. AKS runs two `Standard_D2ds_v5` Azure Linux 3 nodes with host encryption, managed Entra authentication, Azure RBAC, OIDC/workload identity, and Cilium. The local operator role is opt-in and cluster-scoped; reusable Terraform configurations create no human data-plane assignment by default.
 
 The backend and frontend are built locally for AMD64, pushed to the ACR endpoint returned by `terraform -chdir=iac output -raw acr_login_server`, and deployed by digest. Helm release `northstar` runs two replicas of each component in a Restricted namespace with PDBs and NetworkPolicies. Its in-cluster smoke test verifies backend readiness and frontend health.
 

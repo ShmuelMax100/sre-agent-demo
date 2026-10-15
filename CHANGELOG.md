@@ -2,6 +2,25 @@
 
 This append-only log records implementation changes by date.
 
+### 2026-10-14 - Update fork onboarding after canonical repository transfer
+
+- Updated the canonical repository identity from `msftse/sre-agent-demo` to `msftse-org/sre-agent-demo` in fork validation and first-run guidance.
+- Restored `setup-colleague.sh` compatibility with forks created after the organization transfer while preserving the canonical-repository safety boundary.
+- Corrected generated Teams variable alignment so a fresh `terraform.tfvars` passes the repository's mandatory recursive format check.
+- Preserved legacy Managed Grafana names when they already fit Azure's 23-character limit and used a bounded fallback across all other valid environment and suffix inputs.
+- Kept SRE Agent access-mode verification fail-closed when Terraform marks the planned AzAPI body unknown because its managed identity is created in the same apply.
+- Preserved Function runtime and app-setting verification when Terraform marks the complete app-settings map unknown due to same-apply identity and SRE endpoint values.
+- Updated fail-closed resource-count assertions for the current SRE Agent and Teams Bridge topology, including optional operator role assignments.
+- Made profile verification insensitive to Terraform's alignment whitespace and included the fresh-profile AKS node resource group assignment.
+- Restricted declarative state-forget actions to the two expected legacy Storage service addresses and excluded them from topology counts.
+- Added an optional explicit bounded AKS node-resource-group name for fresh profiles while preserving null behavior for existing clusters to avoid replacement.
+- Changed Teams Bridge Blob and Table service configuration to update Azure-created default services instead of attempting conflicting creates, with no-destroy removal blocks for legacy state.
+- Allowed deployment to reach the mandatory managed-identity storage cleanup only when Core Tools explicitly reports a successful deployment followed by its premature health-check failure; all other publish errors remain terminal and the final post-restart health gate remains authoritative.
+- Configured the `demo` environment fail-closed by removing every deployment policy except the exact `main` branch before writing its OIDC-bound variables and secrets.
+- Made deployment-policy cleanup and verification traverse every GitHub API page before authorizing the `demo` environment.
+- Added an optional profile marker for fresh bounded AKS node resource group names while allowing legacy profiles to retain missing or null values without cluster replacement.
+- Updated the documented canonical immutable GitHub OIDC subject after the repository moved to `msftse-org`.
+
 ### 2026-08-24 - Allow read-only SRE Agent node inspection
 
 - Added an AKS-scoped custom role for the existing SRE Agent UAMI containing only `Microsoft.ContainerService/managedClusters/nodes/read`.

@@ -66,6 +66,23 @@ required_observability_field() {
   printf '%s\n' "$value"
 }
 
+deployment_branch_policies() {
+  local repository=$1
+  local environment=$2
+
+  gh api \
+    --paginate \
+    --slurp \
+    "repos/$repository/environments/$environment/deployment-branch-policies?per_page=100" \
+    | jq '
+        [.[]?.branch_policies[]?] as $policies
+        | {
+            total_count: ($policies | length),
+            branch_policies: $policies
+          }
+      '
+}
+
 require_command gh
 require_command jq
 require_command terraform
@@ -88,7 +105,48 @@ telemetry_client_id=$(required_observability_field "$terraform_outputs" telemetr
 grafana_url=$(required_observability_field "$terraform_outputs" grafana_endpoint)
 applicationinsights_connection_string=$(required_output "$terraform_outputs" application_insights_connection_string)
 
-gh api --method PUT "repos/$repository/environments/$environment" >/dev/null
+gh api --method PUT "repos/$repository/environments/$environment" --input - >/dev/null <<'JSON'
+{
+  "deployment_branch_policy": {
+    "protected_branches": false,
+    "custom_branch_policies": true
+  }
+}
+JSON
+
+branch_policies_json=$(deployment_branch_policies "$repository" "$environment")
+main_policy_id=$(jq -r '
+  [.branch_policies[]? | select(.name == "main" and .type == "branch")]
+  | .[0].id // empty
+' <<<"$branch_policies_json")
+while IFS= read -r policy_id; do
+  [[ -n "$policy_id" ]] || continue
+  gh api \
+    --method DELETE \
+    "repos/$repository/environments/$environment/deployment-branch-policies/$policy_id" \
+    >/dev/null
+done < <(
+  jq -r --arg keep_policy_id "$main_policy_id" '
+    .branch_policies[]?
+    | select((.id | tostring) != $keep_policy_id)
+    | .id
+  ' <<<"$branch_policies_json"
+)
+
+if [[ -z "$main_policy_id" ]]; then
+  gh api \
+    --method POST \
+    "repos/$repository/environments/$environment/deployment-branch-policies" \
+    --field name=main \
+    --field type=branch >/dev/null
+fi
+
+branch_policies_json=$(deployment_branch_policies "$repository" "$environment")
+jq -e '
+  .total_count == 1
+  and .branch_policies[0].name == "main"
+  and .branch_policies[0].type == "branch"
+' <<<"$branch_policies_json" >/dev/null || fail "Environment must allow deployments only from main"
 
 gh variable set ACR_LOGIN_SERVER --repo "$repository" --env "$environment" --body "$acr_login_server"
 gh variable set AKS_NAME --repo "$repository" --env "$environment" --body "$aks_name"

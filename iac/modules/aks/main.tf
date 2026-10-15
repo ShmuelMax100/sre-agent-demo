@@ -9,6 +9,7 @@ resource "azurerm_kubernetes_cluster" "this" {
   name                = var.name
   location            = var.location
   resource_group_name = var.resource_group_name
+  node_resource_group = var.node_resource_group_name
   dns_prefix          = var.name
   kubernetes_version  = var.kubernetes_version
 

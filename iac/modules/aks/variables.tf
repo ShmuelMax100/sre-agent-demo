@@ -26,6 +26,11 @@ variable "resource_group_name" {
   type        = string
 }
 
+variable "node_resource_group_name" {
+  description = "AKS-managed node resource group name."
+  type        = string
+}
+
 variable "tenant_id" {
   description = "Microsoft Entra tenant ID for managed AKS authentication."
   type        = string

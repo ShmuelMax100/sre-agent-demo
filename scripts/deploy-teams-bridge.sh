@@ -29,10 +29,25 @@ for secret_name in bot-client-secret github-webhook-secret mcp-shared-key; do
     }
 done
 
+publish_log=$(mktemp "${TMPDIR:-/tmp}/teams-bridge-publish.XXXXXX")
+chmod 600 "$publish_log"
+trap 'rm -f "$publish_log"' EXIT
+
+publish_status=0
 (
   cd "$APP_DIR"
-  func azure functionapp publish "$function_app_name" --python --build remote
-)
+  func azure functionapp publish "$function_app_name" --python --build remote 2>&1 \
+    | tee "$publish_log"
+) || publish_status=$?
+if (( publish_status != 0 )); then
+  if grep -F 'Deployment was successful but the app appears to be unhealthy' \
+    "$publish_log" >/dev/null; then
+    printf '%s\n' \
+      'Core Tools publish health check failed; continuing with managed-identity storage cleanup before the authoritative health check.' >&2
+  else
+    exit "$publish_status"
+  fi
+fi
 
 # Core Tools synthesizes this classic connection string during publish even when
 # local.settings.json is excluded. It overrides the managed-identity components.

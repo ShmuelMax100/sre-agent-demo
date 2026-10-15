@@ -6,11 +6,12 @@ environment     = "demo"
 project_name    = "sre-agent-demo"
 name_suffix     = "abcd"
 
-acr_sku                = "Standard"
-aks_node_count         = 2
-aks_node_vm_size       = "Standard_D2ds_v5"
-aks_sku_tier           = "Free"
-aks_operator_object_id = null
+acr_sku                      = "Standard"
+aks_node_count               = 2
+aks_node_vm_size             = "Standard_D2ds_v5"
+aks_sku_tier                 = "Free"
+aks_operator_object_id       = null
+aks_node_resource_group_name = "rg-aks-sreagent-demo-abcd"
 
 github_repository          = "your-github-owner/your-sre-agent-demo-fork"
 github_environment         = "demo"

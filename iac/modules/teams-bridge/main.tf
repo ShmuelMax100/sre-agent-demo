@@ -43,7 +43,15 @@ resource "azapi_resource" "storage_account" {
   }
 }
 
-resource "azapi_resource" "blob_service" {
+removed {
+  from = azapi_resource.blob_service
+
+  lifecycle {
+    destroy = false
+  }
+}
+
+resource "azapi_update_resource" "blob_service" {
   type      = "Microsoft.Storage/storageAccounts/blobServices@2025-06-01"
   name      = "default"
   parent_id = azapi_resource.storage_account.id
@@ -64,15 +72,25 @@ resource "azapi_resource" "blob_service" {
 resource "azapi_resource" "deployment_container" {
   type      = "Microsoft.Storage/storageAccounts/blobServices/containers@2025-06-01"
   name      = "function-releases"
-  parent_id = azapi_resource.blob_service.id
+  parent_id = "${azapi_resource.storage_account.id}/blobServices/default"
   body = {
     properties = {
       publicAccess = "None"
     }
   }
+
+  depends_on = [azapi_update_resource.blob_service]
 }
 
-resource "azapi_resource" "table_service" {
+removed {
+  from = azapi_resource.table_service
+
+  lifecycle {
+    destroy = false
+  }
+}
+
+resource "azapi_update_resource" "table_service" {
   type      = "Microsoft.Storage/storageAccounts/tableServices@2025-06-01"
   name      = "default"
   parent_id = azapi_resource.storage_account.id
@@ -82,8 +100,10 @@ resource "azapi_resource" "table_service" {
 resource "azapi_resource" "state_table" {
   type      = "Microsoft.Storage/storageAccounts/tableServices/tables@2025-06-01"
   name      = var.storage_table_name
-  parent_id = azapi_resource.table_service.id
+  parent_id = "${azapi_resource.storage_account.id}/tableServices/default"
   body      = { properties = {} }
+
+  depends_on = [azapi_update_resource.table_service]
 }
 
 resource "azurerm_key_vault" "this" {

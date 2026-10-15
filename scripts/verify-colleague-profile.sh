@@ -8,6 +8,7 @@ readonly DEFAULT_PROFILE_PATH="$ROOT_DIR/.demo-profile.env"
 readonly DEFAULT_TFVARS_PATH="$ROOT_DIR/iac/terraform.tfvars"
 readonly UUID_PATTERN='^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
 readonly SUFFIX_PATTERN='^[a-z0-9]{4,8}$'
+readonly RESOURCE_GROUP_PATTERN='^[a-z0-9-]{2,80}$'
 readonly PROFILE_REPOSITORY_PATTERN='^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$'
 readonly CHANNEL_PATTERN='^19:[^[:space:]]+@thread\.tacv2$'
 readonly REQUIRED_PROFILE_VARS=(
@@ -80,7 +81,23 @@ hcl_string() {
 
 assert_tfvars_line() {
   local expected=$1
-  grep -Fx -- "$expected" "$tfvars_path" >/dev/null || fail "Missing tfvars line: $expected"
+  local normalized_expected
+  local line
+  local normalized_line
+
+  normalized_expected=$(sed -E \
+    -e 's/^[[:space:]]+//' \
+    -e 's/[[:space:]]*=[[:space:]]*/=/' \
+    <<<"$expected")
+  while IFS= read -r line; do
+    normalized_line=$(sed -E \
+      -e 's/^[[:space:]]+//' \
+      -e 's/[[:space:]]*=[[:space:]]*/=/' \
+      <<<"$line")
+    [[ "$normalized_line" == "$normalized_expected" ]] && return 0
+  done <"$tfvars_path"
+
+  fail "Missing tfvars assignment: $normalized_expected"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -139,6 +156,11 @@ done
 [[ "$DEMO_GITHUB_REPOSITORY_OWNER_ID" =~ ^[0-9]+$ ]] || fail "DEMO_GITHUB_REPOSITORY_OWNER_ID must be numeric"
 [[ "$DEMO_GITHUB_REPOSITORY_ID" =~ ^[0-9]+$ ]] || fail "DEMO_GITHUB_REPOSITORY_ID must be numeric"
 [[ "$DEMO_TEAMS_CHANNEL_ID" =~ $CHANNEL_PATTERN ]] || fail "DEMO_TEAMS_CHANNEL_ID must match 19:<id>@thread.tacv2"
+aks_node_resource_group_name=${DEMO_AKS_NODE_RESOURCE_GROUP_NAME:-}
+if [[ -n "$aks_node_resource_group_name" ]]; then
+  [[ "$aks_node_resource_group_name" =~ $RESOURCE_GROUP_PATTERN ]] \
+    || fail "DEMO_AKS_NODE_RESOURCE_GROUP_NAME must be a 2-80 character lowercase resource group name"
+fi
 [[ "$DEMO_TEAMS_PERSONAL_CHAT_ENABLED" == "true" || "$DEMO_TEAMS_PERSONAL_CHAT_ENABLED" == "false" ]] \
   || fail "DEMO_TEAMS_PERSONAL_CHAT_ENABLED must be true or false"
 [[ "$DEMO_TEAMS_PERSONAL_CHAT_ACCESS_MODE" == "allowed_user" || "$DEMO_TEAMS_PERSONAL_CHAT_ACCESS_MODE" == "tenant" ]] \
@@ -163,6 +185,9 @@ assert_tfvars_line "github_repository_id       = $DEMO_GITHUB_REPOSITORY_ID"
 assert_tfvars_line "enable_observability = true"
 assert_tfvars_line "enable_sre_agent     = true"
 assert_tfvars_line "enable_teams_bridge  = true"
+if [[ -n "$aks_node_resource_group_name" ]]; then
+  assert_tfvars_line "aks_node_resource_group_name = $(hcl_string "$aks_node_resource_group_name")"
+fi
 assert_tfvars_line "teams_tenant_id              = $(hcl_string "$DEMO_TEAMS_TENANT_ID")"
 assert_tfvars_line "teams_team_id                = $(hcl_string "$DEMO_TEAMS_TEAM_ID")"
 assert_tfvars_line "teams_channel_id             = $(hcl_string "$DEMO_TEAMS_CHANNEL_ID")"

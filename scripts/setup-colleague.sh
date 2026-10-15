@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 readonly ROOT_DIR
-readonly CANONICAL_REPOSITORY="msftse/sre-agent-demo"
+readonly CANONICAL_REPOSITORY="msftse-org/sre-agent-demo"
 readonly UUID_PATTERN='^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
 readonly SUFFIX_PATTERN='^[a-z0-9]{4,8}$'
 readonly LOCAL_REPOSITORY_PATTERN='^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$'
@@ -52,7 +52,7 @@ Options:
   --owner-email <email>         Owner tag value (default: az account user.name)
   --location <slug>             Azure location slug (default: swedencentral)
   --output-dir <path>           Output root directory (default: repository root)
-  --allow-canonical             Permit msftse/sre-agent-demo for maintainer use
+  --allow-canonical             Permit msftse-org/sre-agent-demo for maintainer use
   --force                       Overwrite existing output files
   --dry-run                     Validate and render to temp dir (or --output-dir) without touching defaults
   -h, --help                    Show this message
@@ -334,6 +334,8 @@ write_profile() {
     printf 'DEMO_GITHUB_REPOSITORY_ID=%q\n' "$github_repository_id"
     printf 'DEMO_GITHUB_ENVIRONMENT=%q\n' "$github_environment"
     printf 'DEMO_NAME_SUFFIX=%q\n' "$name_suffix"
+    printf 'DEMO_AKS_NODE_RESOURCE_GROUP_NAME=%q\n' \
+      "rg-aks-sreagent-demo-${name_suffix}"
     printf 'DEMO_TEAMS_TENANT_ID=%q\n' "$teams_tenant_id"
     printf 'DEMO_TEAMS_TEAM_ID=%q\n' "$teams_team_id"
     printf 'DEMO_TEAMS_CHANNEL_ID=%q\n' "$teams_channel_id"
@@ -355,11 +357,13 @@ write_tfvars() {
     printf 'project_name    = %s\n' "$(hcl_string "sre-agent-demo")"
     printf 'name_suffix     = %s\n' "$(hcl_string "$name_suffix")"
     printf '\n'
-    printf 'acr_sku                = %s\n' '"Standard"'
-    printf 'aks_node_count         = 2\n'
-    printf 'aks_node_vm_size       = %s\n' '"Standard_D2ds_v5"'
-    printf 'aks_sku_tier           = %s\n' '"Free"'
-    printf 'aks_operator_object_id = null\n'
+    printf 'acr_sku                      = %s\n' '"Standard"'
+    printf 'aks_node_count               = 2\n'
+    printf 'aks_node_vm_size             = %s\n' '"Standard_D2ds_v5"'
+    printf 'aks_sku_tier                 = %s\n' '"Free"'
+    printf 'aks_operator_object_id       = null\n'
+    printf 'aks_node_resource_group_name = %s\n' \
+      "$(hcl_string "rg-aks-sreagent-demo-${name_suffix}")"
     printf '\n'
     printf 'github_repository          = %s\n' "$(hcl_string "$repository")"
     printf 'github_environment         = %s\n' "$(hcl_string "$github_environment")"
@@ -370,10 +374,10 @@ write_tfvars() {
     printf 'enable_sre_agent     = true\n'
     printf 'enable_teams_bridge  = true\n'
     printf '\n'
-    printf 'teams_tenant_id              = %s\n' "$(hcl_string "$teams_tenant_id")"
-    printf 'teams_team_id                = %s\n' "$(hcl_string "$teams_team_id")"
-    printf 'teams_channel_id             = %s\n' "$(hcl_string "$teams_channel_id")"
-    printf 'teams_allowed_user_object_id = %s\n' "$(hcl_string "$teams_user_object_id")"
+    printf 'teams_tenant_id                    = %s\n' "$(hcl_string "$teams_tenant_id")"
+    printf 'teams_team_id                      = %s\n' "$(hcl_string "$teams_team_id")"
+    printf 'teams_channel_id                   = %s\n' "$(hcl_string "$teams_channel_id")"
+    printf 'teams_allowed_user_object_id       = %s\n' "$(hcl_string "$teams_user_object_id")"
     printf 'teams_personal_chat_enabled        = %s\n' "$teams_personal_chat_enabled"
     printf 'teams_personal_chat_access_mode    = %s\n' "$(hcl_string "$teams_personal_chat_access_mode")"
     printf 'teams_personal_chat_turns_per_hour = %s\n' "$teams_personal_chat_turns_per_hour"

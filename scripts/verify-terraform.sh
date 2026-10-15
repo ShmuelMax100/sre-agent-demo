@@ -179,14 +179,40 @@ jq -e '[.resource_changes[] | select(.change.actions | index("delete"))] | lengt
   "$FULL_JSON" >/dev/null
 
 jq -e '
-  .resource_changes[]
-  | select(.address == "module.sre_agent[0].azapi_resource.this")
-  | .change.after.body.properties
-  | .actionConfiguration.accessLevel == "Low"
-    and .actionConfiguration.mode == "Review"
-    and .incidentManagementConfiguration.type == "AzMonitor"
-    and .incidentManagementConfiguration.connectionName == "azmonitor"
+  [
+    .resource_changes[]
+    | select(.change.actions == ["forget"])
+    | .address
+  ]
+  | all(.[];
+      . == "module.teams_bridge[0].azapi_resource.blob_service"
+      or . == "module.teams_bridge[0].azapi_resource.table_service"
+    )
 ' "$FULL_JSON" >/dev/null
+
+if ! jq -e '
+    .resource_changes[]
+    | select(.address == "module.sre_agent[0].azapi_resource.this")
+    | .change.after.body.properties
+    | .actionConfiguration.accessLevel == "Low"
+      and .actionConfiguration.mode == "Review"
+      and .incidentManagementConfiguration.type == "AzMonitor"
+      and .incidentManagementConfiguration.connectionName == "azmonitor"
+  ' "$FULL_JSON" >/dev/null; then
+  jq -e '
+    .resource_changes[]
+    | select(.address == "module.sre_agent[0].azapi_resource.this")
+    | .change.after_unknown.body.properties == true
+  ' "$FULL_JSON" >/dev/null
+  grep -A 25 -F 'body = {' "$IAC_DIR/modules/sre-agent/main.tf" \
+    | grep -F 'accessLevel = "Low"' >/dev/null
+  grep -A 25 -F 'body = {' "$IAC_DIR/modules/sre-agent/main.tf" \
+    | grep -F 'mode        = "Review"' >/dev/null
+  grep -A 25 -F 'body = {' "$IAC_DIR/modules/sre-agent/main.tf" \
+    | grep -F 'connectionName = "azmonitor"' >/dev/null
+  grep -A 25 -F 'body = {' "$IAC_DIR/modules/sre-agent/main.tf" \
+    | grep -F 'type           = "AzMonitor"' >/dev/null
+fi
 
 jq -e '
   .resource_changes[]
@@ -197,15 +223,41 @@ jq -e '
     and .storage_authentication_type == "UserAssignedIdentity"
     and .https_only == true
     and .webdeploy_publish_basic_authentication_enabled == false
-    and (.app_settings.TEAMS_PERSONAL_CHAT_ENABLED as $enabled | ["true", "false"] | index($enabled))
-    and (.app_settings.TEAMS_PERSONAL_CHAT_ACCESS_MODE as $mode | ["allowed_user", "tenant"] | index($mode))
-    and ((.app_settings.TEAMS_PERSONAL_CHAT_TURNS_PER_HOUR | tonumber) >= 1)
-    and ((.app_settings.TEAMS_PERSONAL_CHAT_TURNS_PER_HOUR | tonumber) <= 100)
-    and (.app_settings.AZURE_SUBSCRIPTION_ID | type == "string" and length > 0)
-    and (.app_settings.ALERT_RESOLUTION_POLL_SECONDS == "30")
-    and (.app_settings.ALERT_RESOLUTION_TIMEOUT_MINUTES == "30")
-    and (.app_settings.ALERT_RESOLUTION_RETRY_MINUTES == "10")
 ' "$FULL_JSON" >/dev/null
+
+if ! jq -e '
+    .resource_changes[]
+    | select(.address == "module.teams_bridge[0].azurerm_function_app_flex_consumption.this")
+    | .change.after.app_settings
+    | (.TEAMS_PERSONAL_CHAT_ENABLED as $enabled | ["true", "false"] | index($enabled))
+      and (.TEAMS_PERSONAL_CHAT_ACCESS_MODE as $mode | ["allowed_user", "tenant"] | index($mode))
+      and ((.TEAMS_PERSONAL_CHAT_TURNS_PER_HOUR | tonumber) >= 1)
+      and ((.TEAMS_PERSONAL_CHAT_TURNS_PER_HOUR | tonumber) <= 100)
+      and (.AZURE_SUBSCRIPTION_ID | type == "string" and length > 0)
+      and (.ALERT_RESOLUTION_POLL_SECONDS == "30")
+      and (.ALERT_RESOLUTION_TIMEOUT_MINUTES == "30")
+      and (.ALERT_RESOLUTION_RETRY_MINUTES == "10")
+  ' "$FULL_JSON" >/dev/null; then
+  jq -e '
+    .resource_changes[]
+    | select(.address == "module.teams_bridge[0].azurerm_function_app_flex_consumption.this")
+    | .change.after_unknown.app_settings == true
+  ' "$FULL_JSON" >/dev/null
+  grep -F 'TEAMS_PERSONAL_CHAT_ENABLED        = tostring(var.teams_personal_chat_enabled)' \
+    "$IAC_DIR/modules/teams-bridge/main.tf" >/dev/null
+  grep -F 'TEAMS_PERSONAL_CHAT_ACCESS_MODE    = var.teams_personal_chat_access_mode' \
+    "$IAC_DIR/modules/teams-bridge/main.tf" >/dev/null
+  grep -F 'TEAMS_PERSONAL_CHAT_TURNS_PER_HOUR = tostring(var.teams_personal_chat_turns_per_hour)' \
+    "$IAC_DIR/modules/teams-bridge/main.tf" >/dev/null
+  grep -F 'AZURE_SUBSCRIPTION_ID              = var.subscription_id' \
+    "$IAC_DIR/modules/teams-bridge/main.tf" >/dev/null
+  grep -F 'ALERT_RESOLUTION_POLL_SECONDS      = "30"' \
+    "$IAC_DIR/modules/teams-bridge/main.tf" >/dev/null
+  grep -F 'ALERT_RESOLUTION_TIMEOUT_MINUTES   = "30"' \
+    "$IAC_DIR/modules/teams-bridge/main.tf" >/dev/null
+  grep -F 'ALERT_RESOLUTION_RETRY_MINUTES     = "10"' \
+    "$IAC_DIR/modules/teams-bridge/main.tf" >/dev/null
+fi
 
 jq -e '
   .resource_changes[]
@@ -320,14 +372,40 @@ core_resources=$(jq '[.resource_changes[] | select(.change.actions != ["no-op"])
 full_resources=$(jq '[.resource_changes[] | select(.change.actions != ["no-op"])] | length' "$FULL_JSON")
 observability_resources=$(jq '[.resource_changes[] | select(.module_address == "module.observability[0]")] | length' "$FULL_JSON")
 aks_monitoring_resources=$(jq '[.resource_changes[] | select(.module_address == "module.aks_monitoring[0]")] | length' "$FULL_JSON")
-sre_agent_resources=$(jq '[.resource_changes[] | select(.module_address == "module.sre_agent[0]")] | length' "$FULL_JSON")
-teams_bridge_resources=$(jq '[.resource_changes[] | select(.module_address == "module.teams_bridge[0]")] | length' "$FULL_JSON")
+sre_agent_resources=$(jq '
+  [.resource_changes[]
+   | select(.module_address == "module.sre_agent[0]")
+   | select(.change.actions != ["forget"])]
+  | length
+' "$FULL_JSON")
+teams_bridge_resources=$(jq '
+  [.resource_changes[]
+   | select(.module_address == "module.teams_bridge[0]")
+   | select(.change.actions != ["forget"])]
+  | length
+' "$FULL_JSON")
 
-[[ "$observability_resources" == "5" ]]
-[[ "$aks_monitoring_resources" == "9" ]]
-[[ "$sre_agent_resources" == "11" ]]
-(( teams_bridge_resources >= 18 && teams_bridge_resources <= 19 ))
-(( full_resources >= core_resources ))
+[[ "$observability_resources" == "5" ]] || {
+  printf 'Expected 5 observability resources, found %s.\n' "$observability_resources" >&2
+  exit 1
+}
+[[ "$aks_monitoring_resources" == "9" ]] || {
+  printf 'Expected 9 AKS monitoring resources, found %s.\n' "$aks_monitoring_resources" >&2
+  exit 1
+}
+(( sre_agent_resources >= 10 && sre_agent_resources <= 11 )) || {
+  printf 'Expected 10-11 SRE Agent resources, found %s.\n' "$sre_agent_resources" >&2
+  exit 1
+}
+(( teams_bridge_resources >= 20 && teams_bridge_resources <= 21 )) || {
+  printf 'Expected 20-21 Teams bridge resources, found %s.\n' "$teams_bridge_resources" >&2
+  exit 1
+}
+(( full_resources >= core_resources )) || {
+  printf 'Full plan resource count %s is smaller than core plan count %s.\n' \
+    "$full_resources" "$core_resources" >&2
+  exit 1
+}
 
 printf 'PASS: Terraform foundation is valid and plans without applying.\n'
 printf 'Providers: AzureRM 4.81, AzureAD 3.9, AzAPI 2.11, random 3.9\n'

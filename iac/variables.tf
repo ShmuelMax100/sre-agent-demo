@@ -149,6 +149,24 @@ variable "acr_sku" {
   }
 }
 
+variable "aks_node_resource_group_name" {
+  description = "Optional explicit AKS-managed node resource group name. Leave null when adopting an existing cluster."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition = (
+      var.aks_node_resource_group_name == null
+      || can(regex(
+        "^[A-Za-z0-9][A-Za-z0-9_.()\\-]{0,78}[A-Za-z0-9_()\\-]$",
+        var.aks_node_resource_group_name,
+      ))
+    )
+    error_message = "aks_node_resource_group_name must be null or a valid 2-80 character Azure resource group name that does not end with a period."
+  }
+}
+
 variable "github_repository" {
   description = "GitHub owner/repository allowed to federate to the deployment identity."
   type        = string

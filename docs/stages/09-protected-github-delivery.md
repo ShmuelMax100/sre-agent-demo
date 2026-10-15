@@ -66,7 +66,7 @@ PRs are reserved for code fixes authored after an actual SRE Agent investigation
 This repository was created after GitHub's July 15, 2026 immutable-subject cutover. Azure trusts the exact environment subject:
 
 ```text
-repo:msftse@259423729/sre-agent-demo@1323141369:environment:demo
+repo:msftse-org@318985115/sre-agent-demo@1323141369:environment:demo
 ```
 
 Terraform constructs the immutable subject from explicit owner and repository IDs and manages the federated credential in place. The GitHub deployment identity retains only `AcrPush`, AKS Cluster User, and AKS RBAC Cluster Admin roles at the relevant resources. No Azure client secret is stored in GitHub.

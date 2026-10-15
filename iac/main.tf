@@ -25,10 +25,15 @@ locals {
     0,
     128,
   )
-  log_analytics_name          = "log-${var.project_name}-${var.environment}-${local.suffix}"
-  app_insights_name           = "appi-${var.project_name}-${var.environment}-${local.suffix}"
-  monitor_name                = "amw-${var.project_name}-${var.environment}-${local.suffix}"
-  grafana_name                = "amg-${substr(local.compact_project, 0, 6)}-${var.environment}-${local.suffix}"
+  log_analytics_name  = "log-${var.project_name}-${var.environment}-${local.suffix}"
+  app_insights_name   = "appi-${var.project_name}-${var.environment}-${local.suffix}"
+  monitor_name        = "amw-${var.project_name}-${var.environment}-${local.suffix}"
+  legacy_grafana_name = "amg-${substr(local.compact_project, 0, 6)}-${var.environment}-${local.suffix}"
+  grafana_name = (
+    length(local.legacy_grafana_name) <= 23
+    ? local.legacy_grafana_name
+    : "amg-${substr(local.compact_project, 0, 5)}-${substr(var.environment, 0, 4)}-${local.suffix}"
+  )
   sre_agent_name              = "sre-${var.project_name}-${var.environment}-${local.suffix}"
   teams_bridge_name           = "func-tm-${substr(local.compact_project, 0, 8)}-${var.environment}-${local.suffix}"
   teams_bridge_storage_name   = "sttm${substr(local.compact_project, 0, 8)}${var.environment}${local.suffix}"
@@ -96,6 +101,7 @@ module "aks" {
   log_analytics_workspace_id = var.enable_observability ? module.observability[0].log_analytics_workspace_id : null
   managed_prometheus_enabled = var.enable_observability
   name                       = local.aks_name
+  node_resource_group_name   = var.aks_node_resource_group_name
   node_count                 = var.aks_node_count
   node_vm_size               = var.aks_node_vm_size
   pod_cidr                   = var.aks_pod_cidr

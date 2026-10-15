@@ -13,7 +13,7 @@ Help me configure this fork for its first Azure SRE Agent demo run.
 
 Before running any command:
 1. Read AGENT.md and docs/colleague-setup.md completely.
-2. Confirm origin is my fork, upstream is msftse/sre-agent-demo, the current branch is main, and my GitHub permission on the fork is ADMIN.
+2. Confirm origin is my fork, upstream is msftse-org/sre-agent-demo, the current branch is main, and my GitHub permission on the fork is ADMIN.
 3. Confirm .github/workflows/start-demo.yml and .github/workflows/deliver-demo.yml exist on the fork's default branch. Do not create replacement workflows.
 4. Show me the active Azure subscription/tenant and GitHub repository identity, then wait for me to confirm they are correct.
 5. List the Teams tenant, Team, channel, allowed-user, owner-email, and personal-chat choices you still need. Do not guess identifiers.
@@ -107,7 +107,7 @@ Example:
 ```bash
 git clone git@github.com:<your-org-or-user>/sre-agent-demo.git
 cd sre-agent-demo
-git remote add upstream git@github.com:msftse/sre-agent-demo.git
+git remote add upstream git@github.com:msftse-org/sre-agent-demo.git
 git remote -v
 ```
 
@@ -270,7 +270,7 @@ Optional flags:
 - `--teams-personal-chat-turns-per-hour <1-100>` for the per-user personal-chat cost/abuse limit (default `10`).
 - `--name-suffix <4-8-lowercase-alnum>` for deterministic naming.
 - `--output-dir <path>` and `--dry-run` for render checks.
-- `--allow-canonical` only for canonical maintainers intentionally targeting `msftse/sre-agent-demo`.
+- `--allow-canonical` only for canonical maintainers intentionally targeting `msftse-org/sre-agent-demo`.
 
 Generated local files:
 
@@ -327,7 +327,7 @@ Expected result:
 
 - `Start Demo` is listed and supports manual dispatch.
 - `Deliver Demo to AKS` is listed.
-- Both workflow files resolve from the fork, not from `msftse/sre-agent-demo`.
+- Both workflow files resolve from the fork, not from `msftse-org/sre-agent-demo`.
 
 If GitHub shows **Workflows aren't being run on this forked repository**, select **I understand my workflows, go ahead and enable them** in the fork's Actions tab, then rerun the commands. If `gh workflow view` reports that a workflow cannot be found, sync the fork from upstream and confirm the files exist on the fork's default `main` branch.
 
