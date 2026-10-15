@@ -34,7 +34,10 @@ ENV PATH=/opt/venv/bin:${PATH} \
     SRE_DEMO_IMAGE_DIGEST=local-image \
     SRE_DEMO_SERVICE_VERSION=${BUILD_VERSION}
 
-RUN groupadd --gid 10001 app \
+RUN apt-get update \
+    && apt-get install --no-install-recommends --only-upgrade -y perl-base \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --gid 10001 app \
     && useradd --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app
 
 WORKDIR /app

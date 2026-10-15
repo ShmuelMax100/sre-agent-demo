@@ -263,7 +263,7 @@ When helping a colleague use a fresh fork, treat [docs/colleague-setup.md](docs/
 
 ## Container and Helm Contract
 
-- Backend builds a wheel in `python:3.12.13-slim-bookworm` and copies only its virtual environment into the runtime stage. Runtime UID/GID is `10001`.
+- Backend builds a wheel in `python:3.12.13-slim-bookworm`, refreshes the runtime `perl-base` security package, and copies only its virtual environment into the runtime stage. Runtime UID/GID is `10001`.
 - Frontend builds with `node:24.13.1-alpine3.22` and serves static files with `nginxinc/nginx-unprivileged:1.29.4-alpine3.23` as UID/GID `101`.
 - Build package resolution continues through the committed Microsoft npm and PyPI proxies.
 - Nginx has a baked same-origin proxy to the stable `backend` Service. This intentionally avoids runtime configuration writes and init-container permission changes.

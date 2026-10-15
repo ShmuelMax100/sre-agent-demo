@@ -20,6 +20,7 @@ This append-only log records implementation changes by date.
 - Made deployment-policy cleanup and verification traverse every GitHub API page before authorizing the `demo` environment.
 - Added an optional profile marker for fresh bounded AKS node resource group names while allowing legacy profiles to retain missing or null values without cluster replacement.
 - Updated the documented canonical immutable GitHub OIDC subject after the repository moved to `msftse-org`.
+- Upgraded the backend runtime `perl-base` package to the current fixed Debian release so the mandatory Trivy gate blocks no fixed Critical vulnerabilities.
 
 ### 2026-08-24 - Allow read-only SRE Agent node inspection
 
