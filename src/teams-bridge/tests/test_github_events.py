@@ -9,7 +9,12 @@ def repository(full_name: str = EXPECTED_REPOSITORY) -> dict[str, str]:
     return {"full_name": full_name}
 
 
-def pull_request_payload(*, action: str, merged: bool = False) -> dict[str, object]:
+def pull_request_payload(
+    *,
+    action: str,
+    merged: bool = False,
+    sre_thread_marker: str = "sre-thread-1",
+) -> dict[str, object]:
     return {
         "action": action,
         "number": 42,
@@ -17,7 +22,7 @@ def pull_request_payload(*, action: str, merged: bool = False) -> dict[str, obje
         "pull_request": {
             "body": (
                 "Fix checkout\n\n"
-                "<!-- sre-thread-id: sre-thread-1 -->\n"
+                f"<!-- sre-thread-id: {sre_thread_marker} -->\n"
                 "<!-- teams-thread-id: incident-1 -->"
             ),
             "html_url": "https://github.com/msftse/sre-agent-demo/pull/42",
@@ -45,6 +50,49 @@ def test_parses_opened_pull_request_marker() -> None:
     assert event.teams_thread_id == "incident-1"
     assert event.pr_number == 42
     assert event.conclusion == ""
+
+
+@pytest.mark.parametrize(
+    "marker",
+    [
+        (
+            "/subscriptions/subscription-1/resourceGroups/rg-demo/"
+            "providers/Microsoft.App/agents/agent-demo/views/thread/sre-thread-1"
+        ),
+        (
+            "https://sre.azure.com/agents/subscriptions/subscription-1/"
+            "resourceGroups/rg-demo/providers/Microsoft.App/agents/agent-demo/"
+            "views/thread/sre-thread-1"
+        ),
+    ],
+)
+def test_normalizes_canonical_sre_thread_resource_marker(marker: str) -> None:
+    event = parse_github_event(
+        delivery_id="delivery-resource-marker",
+        event_type="pull_request",
+        payload=pull_request_payload(action="opened", sre_thread_marker=marker),
+        expected_repository=EXPECTED_REPOSITORY,
+    )
+
+    assert event.sre_thread_id == "sre-thread-1"
+
+
+@pytest.mark.parametrize(
+    "marker",
+    [
+        "https://example.com/views/thread/sre-thread-1",
+        "/subscriptions/sub/resourceGroups/rg/providers/Other/agents/a/views/thread/t",
+        "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.App/agents/a",
+    ],
+)
+def test_rejects_noncanonical_sre_thread_resource_marker(marker: str) -> None:
+    with pytest.raises(IgnoredGitHubEvent, match="thread_marker"):
+        parse_github_event(
+            delivery_id="delivery-invalid-marker",
+            event_type="pull_request",
+            payload=pull_request_payload(action="opened", sre_thread_marker=marker),
+            expected_repository=EXPECTED_REPOSITORY,
+        )
 
 
 def test_rejects_empty_expected_repository() -> None:

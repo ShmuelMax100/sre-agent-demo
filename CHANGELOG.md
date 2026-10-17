@@ -2,6 +2,12 @@
 
 This append-only log records implementation changes by date.
 
+### 2026-10-17 - Restore signed GitHub continuation for canonical SRE thread markers
+
+- Normalized the canonical SRE chat thread resource ID written by the remediation skill to the data-plane thread ID expected by continuation calls.
+- Kept callback correlation fail-closed by accepting only a bare thread ID or the exact `sre.azure.com` / `Microsoft.App/agents/.../views/thread/...` resource shape.
+- Added regression coverage for canonical resource paths, portal URLs, and rejected noncanonical marker values.
+
 ### 2026-10-14 - Update fork onboarding after canonical repository transfer
 
 - Updated the canonical repository identity from `msftse/sre-agent-demo` to `msftse-org/sre-agent-demo` in fork validation and first-run guidance.

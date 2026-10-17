@@ -4,7 +4,16 @@ from dataclasses import dataclass
 from typing import Any
 
 EXPECTED_WORKFLOW = "Deliver Demo to AKS"
-THREAD_MARKER = re.compile(r"<!--\s*sre-thread-id:\s*([A-Za-z0-9._:-]+)\s*-->")
+THREAD_MARKER = re.compile(r"<!--\s*sre-thread-id:\s*([^\s<>]+)\s*-->")
+THREAD_ID = re.compile(r"^[A-Za-z0-9._:-]+$")
+THREAD_RESOURCE_ID = re.compile(
+    r"^(?:https://sre\.azure\.com/agents)?"
+    r"/subscriptions/[^/\s<>]+"
+    r"/resourceGroups/[^/\s<>]+"
+    r"/providers/Microsoft\.App/agents/[^/\s<>]+"
+    r"/views/thread/([A-Za-z0-9._:-]+)$",
+    re.IGNORECASE,
+)
 TEAMS_THREAD_MARKER = re.compile(
     r"<!--\s*teams-thread-id:\s*([A-Za-z0-9._:-]+)\s*-->"
 )
@@ -12,6 +21,15 @@ TEAMS_THREAD_MARKER = re.compile(
 
 class IgnoredGitHubEvent(ValueError):
     pass
+
+
+def _normalize_sre_thread_marker(value: str) -> str:
+    if THREAD_ID.fullmatch(value):
+        return value
+    resource_match = THREAD_RESOURCE_ID.fullmatch(value)
+    if resource_match is not None:
+        return resource_match.group(1)
+    raise IgnoredGitHubEvent("thread_marker")
 
 
 @dataclass(frozen=True)
@@ -122,6 +140,7 @@ def _parse_pull_request(
     markers = THREAD_MARKER.findall(body)
     if len(markers) != 1:
         raise IgnoredGitHubEvent("thread_marker")
+    sre_thread_id = _normalize_sre_thread_marker(markers[0])
     teams_markers = TEAMS_THREAD_MARKER.findall(body)
     if len(teams_markers) != 1:
         raise IgnoredGitHubEvent("teams_thread_marker")
@@ -147,7 +166,7 @@ def _parse_pull_request(
         event_type="pull_request",
         action=action,
         repository=repository,
-        sre_thread_id=markers[0],
+        sre_thread_id=sre_thread_id,
         teams_thread_id=teams_markers[0],
         pr_number=int(payload.get("number", 0)),
         pr_url=str(pull_request.get("html_url", "")),
